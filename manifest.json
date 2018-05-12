@@ -13,7 +13,8 @@
     "https://www.amazon.fr/",
     "https://www.amazon.in/",
     "https://www.amazon.it/",
-    "https://smile.amazon.com/"
+    "https://smile.amazon.com/",
+    "https://www.google-analytics.com/"
   ],
   "content_scripts": [
         {
