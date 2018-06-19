@@ -121,10 +121,16 @@ let amazon_order_history_request_scheduler = (function() {
     }
 
     class RequestScheduler {
+        var State = Object.freeze({
+            'running'   : 1,
+            'suspended' : 2,
+            'shutdown'  : 3,
+        }); 
         constructor() {
             // chrome allows 6 requests per domain at the same time.
             this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
             this.queue = new BinaryHeap( item => item.priority );
+            this.state = State.running;
             this.running_count = 0;
             this.completed_count = 0;
             this.error_count = 0;
@@ -144,6 +150,9 @@ let amazon_order_history_request_scheduler = (function() {
                         'Unknown error fetching ' + query);
                 };
                 req.onload = function(evt) {
+                    if (this.state = State.shutdown) {
+                        return;
+                    }
                     this.running_count -= 1;
                     if ( req.status != 200 ) {
                         this.error_count += 1;
@@ -155,6 +164,7 @@ let amazon_order_history_request_scheduler = (function() {
                         this.error_count += 1;
                         console.warn('Got sign-in redirect from: ' + query);
                         if ( !this.signin_warned ) {
+                            this.state = State.suspended;
                             alert('Amazon Order History Reporter Chrome Extension\n\n' +
                                   'It looks like you might have been logged out of Amazon.\n' +
                                   'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
@@ -166,6 +176,7 @@ let amazon_order_history_request_scheduler = (function() {
                                     action: 'open_tab',
                                     url: query
                                 }
+                                //todo: need to get message back on closure of the tab so that we can unsuspend the scheduler and resume processing.
                             );
                         }
                         return;
@@ -174,11 +185,13 @@ let amazon_order_history_request_scheduler = (function() {
                     console.log(
                       'Finished ' + query +
                         ' with queue size ' + this.queue.size());
-                    while (this.running_count < this.CONCURRENCY &&
-                           this.queue.size() > 0
-                    ) {
-                        let task = this.queue.pop();
-                        this.execute(task.query, task.callback, task.priority);
+                    if (this.state == State.running) {
+                        while (this.running_count < this.CONCURRENCY &&
+                               this.queue.size() > 0
+                        ) {
+                            let task = this.queue.pop();
+                            this.execute(task.query, task.callback, task.priority);
+                        }
                     }
                     callback(evt);
                 }.bind(this);
@@ -191,7 +204,7 @@ let amazon_order_history_request_scheduler = (function() {
                     'queued' : this.queue.size(),
                     'running' : this.running_count,
                     'completed' : this.completed_count,
-                    'errors' : this.error_count
+                    'errors' : this.error_count,
                 };
             };
             this.updateProgress = function() {
@@ -207,6 +220,9 @@ let amazon_order_history_request_scheduler = (function() {
         }
 
         schedule(query, callback, priority) {
+            if (this.state == State.shutdown) {
+                throw 'schedule isn\'t permitted on a shutdown RequestScheduler';
+            }
             console.log(
                 'Scheduling ' + query + ' with ' + this.queue.size());
             if (this.running_count < this.CONCURRENCY) {
@@ -218,6 +234,10 @@ let amazon_order_history_request_scheduler = (function() {
                     'priority': priority
                 });
             }
+        }
+
+        shutdown() {
+            this.state = State.shutdown;
         }
     }
 

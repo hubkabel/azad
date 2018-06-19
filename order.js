@@ -20,6 +20,7 @@ let amazon_order_history_order = (function() {
             this.total = null;
             this.who = null;
             this.detail_promise = null;
+            this.payments_promise = null;
             this.items = null;
             this.request_scheduler = request_scheduler;
             this.extractOrder(ordersPageElem);
@@ -253,6 +254,14 @@ let amazon_order_history_order = (function() {
                     }
                 }.bind(this)
             );
+            Promise.all([this.detail_promise, this.payments_promise]).then( () => {
+                chrome.runtime.sendMessage(
+                    {
+                        action: 'cache_order',
+                        order: this,
+                    }
+                );
+            });
         }
 
         /**
@@ -354,6 +363,15 @@ let amazon_order_history_order = (function() {
             );
             function makeOrderPromise(elem) {
                 return new Promise( (resolve, reject) => {
+                    chrome.runtime.sendMessage(
+                        {
+                            action: 'retrieve_order'
+                        },
+                        response => {
+                            if (response === undefined) {
+                            }
+                        },
+                    );
                     const order = amazon_order_history_order.create(elem, request_scheduler);
                     resolve(order);
                 });

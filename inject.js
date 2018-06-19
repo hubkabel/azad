@@ -5,7 +5,7 @@
 const amazon_order_history_inject = (function() {
     'use strict';
 
-    const request_scheduler = amazon_order_history_request_scheduler.create();
+    let request_scheduler = amazon_order_history_request_scheduler.create();
 
 	function getYears() {
 		if(typeof(getYears.years) === 'undefined') {
@@ -27,7 +27,13 @@ const amazon_order_history_inject = (function() {
 		return getYears.years;
 	}
 
+    function resetScheduler() {
+        request_scheduler.shutdown()
+        request_scheduler = amazon_order_history_request_scheduler.create();
+    }
+
     function fetchAndShowOrders(years) {
+        resetScheduler();
 		amazon_order_history_order.getOrdersByYear(
             years, request_scheduler
         ).then(
