@@ -413,17 +413,23 @@ const amazon_order_history_order = (function() {
                             const doc = parser.parseFromString(
                                 evt.target.responseText, "text/html"
                             );
+							
+							
+							
                             const payments = amazon_order_history_util.findMultipleNodeValues(
-                                [
+                                /*
+								[
                                     'Credit Card transactions',
-                                    'Transactions de carte de crédit'
+                                    'Transactions de carte de crédit',
+                                    'Payment Method'
                                 ].map(
                                     label => sprintf(
                                         '//b[contains(text(),"%s")]/' +
                                         '../../..//td[contains(text(),":")]/..',
                                         label
                                     )
-                                ).join('|'),
+                                ).join('|')*/
+								'//b[contains(text(),"Payment Method:")]/following-sibling::nobr',
                                 doc,
                                 doc
                             ).map(function(row){
