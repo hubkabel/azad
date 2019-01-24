@@ -1,5 +1,5 @@
 # azad
-## amazon order history reporter chrome extension
+## amazon order history reporter chrome extension with support for displaying last digits of banking account number
 
 ### official installation page
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
